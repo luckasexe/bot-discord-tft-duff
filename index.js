@@ -28,7 +28,14 @@ async function launchBrowser() {
     return await puppeteer.launch({
         headless: true,
         executablePath: isLinux ? '/usr/bin/chromium-browser' : undefined,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-extensions',
+            '--disable-gpu',
+            '--window-size=1280,800'
+        ]
     });
 }
 
@@ -57,7 +64,7 @@ client.on('messageCreate', async (message) => {
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
             );
             await page.setViewport({ width: 1280, height: 800 });
-            await page.goto(URL_TO_SCREENSHOT, { waitUntil: 'networkidle2' });
+            await page.goto(URL_TO_SCREENSHOT, { waitUntil: 'networkidle2', timeout: 90000 });
 
             // espera a página carregar
             await new Promise(resolve => setTimeout(resolve, 3000));
