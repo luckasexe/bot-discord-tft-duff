@@ -25,15 +25,30 @@ const isLinux = process.platform === 'linux';
 
 // Função para abrir o Puppeteer de forma cross-platform
 async function launchBrowser() {
+    let executablePath;
+
+    if (isLinux) {
+        // tenta achar o chromium instalado no sistema
+        executablePath = '/usr/bin/chromium-browser';
+
+        // fallback se só existir "chromium"
+        const { execSync } = require('child_process');
+        try {
+            executablePath = execSync('which chromium-browser || which chromium', { encoding: 'utf-8' }).trim();
+        } catch (e) {
+            console.warn('⚠️ Nenhum Chromium encontrado no sistema. Considere rodar: npx puppeteer browsers install chrome');
+        }
+    }
+
     return await puppeteer.launch({
         headless: true,
-        executablePath: isLinux ? '/usr/bin/chromium-browser' : undefined, // ajuste se necessário no seu Linux
+        executablePath: executablePath || undefined, // undefined = deixa o puppeteer usar o próprio binário
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 }
 
 client.once('ready', () => {
-    console.log(`Bot ${client.user.tag} online!`);
+    console.log(`✅ Bot ${client.user.tag} online!`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -41,7 +56,7 @@ client.on('messageCreate', async (message) => {
 
     const command = message.content.trim();
 
-    if (command === '!duff-link'){
+    if (command === '!duff-link') {
         message.reply(`${URL_TO_SCREENSHOT}`);
     }
 
@@ -72,11 +87,11 @@ client.on('messageCreate', async (message) => {
             await message.reply({ files: [attachment] });
         } catch (error) {
             console.error(error);
-            message.reply('Erro ao tentar tirar o print da página.');
+            message.reply('❌ Erro ao tentar tirar o print da página.');
         }
     }
 
-    // ======= COMANDO !update =======
+    // ======= COMANDO !duff-update =======
     if (command === '!duff-update') {
         await message.reply('Aguarde, tentando atualizar os status do op.gg...');
         try {
@@ -106,13 +121,13 @@ client.on('messageCreate', async (message) => {
             } else {
                 // tenta clicar no botão
                 await button.click();
-                await message.reply('Atualizado com sucesso!');
+                await message.reply('✅ Atualizado com sucesso!');
             }
 
             await browser.close();
         } catch (error) {
             console.error(error);
-            message.reply('Erro ao tentar atualizar.');
+            message.reply('❌ Erro ao tentar atualizar.');
         }
     }
 });
