@@ -39,6 +39,16 @@ async function launchBrowser() {
     });
 }
 
+// ======= COOLDOWN CONFIG =======
+const cooldowns = {
+    duff: 60 * 1000,        // 30 segundos
+    duffUpdate: 60 * 1000   // 60 segundos
+};
+const lastUsed = {
+    duff: 0,
+    duffUpdate: 0
+};
+
 
 client.once('ready', () => {
     console.log(`✅ Bot ${client.user.tag} online!`);
@@ -55,6 +65,13 @@ client.on('messageCreate', async (message) => {
 
     // ======= COMANDO !duff =======
     if (command === '!duff') {
+        const now = Date.now();
+        if (now - lastUsed.duff < cooldowns.duff) {
+            const wait = Math.ceil((cooldowns.duff - (now - lastUsed.duff)) / 1000);
+            return message.reply(`⏳ Aguarde ${wait}s para fazer outra requisição.`);
+        }
+        lastUsed.duff = now;
+
         await message.reply('Aguarde, o print da página pode demorar alguns segundos...');
         try {
             const browser = await launchBrowser();
@@ -86,6 +103,13 @@ client.on('messageCreate', async (message) => {
 
     // ======= COMANDO !duff-update =======
     if (command === '!duff-update') {
+        const now = Date.now();
+        if (now - lastUsed.duffUpdate < cooldowns.duffUpdate) {
+            const wait = Math.ceil((cooldowns.duffUpdate - (now - lastUsed.duffUpdate)) / 1000);
+            return message.reply(`⏳ Aguarde ${wait}s para fazer outra atualização.`);
+        }
+        lastUsed.duffUpdate = now;
+
         await message.reply('Aguarde, tentando atualizar os status do op.gg...');
         try {
             const browser = await launchBrowser();
