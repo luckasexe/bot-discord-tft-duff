@@ -28,21 +28,20 @@ async function launchBrowser() {
     let executablePath;
 
     if (isLinux) {
-        // tenta achar o chromium instalado no sistema
-        executablePath = '/usr/bin/chromium-browser';
-
-        // fallback se só existir "chromium"
         const { execSync } = require('child_process');
         try {
+            // tenta achar chromium ou chromium-browser no sistema
             executablePath = execSync('which chromium-browser || which chromium', { encoding: 'utf-8' }).trim();
+            console.log(`✅ Chromium encontrado: ${executablePath}`);
         } catch (e) {
-            console.warn('⚠️ Nenhum Chromium encontrado no sistema. Considere rodar: npx puppeteer browsers install chrome');
+            console.warn('⚠️ Nenhum Chromium do sistema encontrado. Usando binário do Puppeteer.');
+            executablePath = undefined; // deixa o Puppeteer usar o próprio
         }
     }
 
     return await puppeteer.launch({
         headless: true,
-        executablePath: executablePath || undefined, // undefined = deixa o puppeteer usar o próprio binário
+        executablePath, // se for undefined, Puppeteer usa o binário interno
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 }
