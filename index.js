@@ -49,34 +49,39 @@ const lastUsed = {
     duffUpdate: 0
 };
 
+let sharedBrowser;
+let duffBusy = false;
 
-client.once('ready', () => {
+client.once('ready', async() => {
     console.log(`✅ Bot ${client.user.tag} online!`);
+    sharedBrowser = await launchBrowser();
 });
 
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
+
     const command = message.content.trim();
 
+    // ======= COMANDO !duff =======
     if (command === '!duff-link') {
         message.reply(`${URL_TO_SCREENSHOT}`);
     }
 
     // ======= COMANDO !duff =======
     if (command === '!duff') {
-        const now = Date.now();
-        if (now - lastUsed.duff < cooldowns.duff) {
-            const wait = Math.ceil((cooldowns.duff - (now - lastUsed.duff)) / 1000);
-            return message.reply(`⏳ Aguarde ${wait}s para fazer outra requisição.`);
+
+        if (duffBusy){
+            return message.reply('⏳ Aguarde a requisição anterior terminar.');
         }
-        lastUsed.duff = now;
+
+        duffBusy = true;
 
         await message.reply('Aguarde, o print da página pode demorar alguns segundos...');
-        try {
-            const browser = await launchBrowser();
-            const page = await browser.newPage();
 
+        let page;
+        try {
+            page = await sharedBrowser.newPage();
             await page.setUserAgent(
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
             );
@@ -84,44 +89,46 @@ client.on('messageCreate', async (message) => {
             await page.goto(URL_TO_SCREENSHOT, { waitUntil: 'networkidle2', timeout: 90000 });
 
             // espera a página carregar
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            await new Promise(resolve => setTimeout(resolve, 300));
+
 
             // captura apenas o painel do summoner
             const element = await page.$('div.flex.flex-col.p-3');
             if (!element) throw new Error('Não encontrou o painel do summoner');
             const screenshotBuffer = await element.screenshot();
-
-            await browser.close();
-
             const attachment = new AttachmentBuilder(screenshotBuffer, { name: 'screenshot.png' });
             await message.reply({ files: [attachment] });
         } catch (error) {
             console.error(error);
             message.reply('❌ Erro ao tentar tirar o print da página.');
+        } finally {
+            duffBusy = false;
+            if (page) await page.close();
         }
     }
 
     // ======= COMANDO !duff-update =======
     if (command === '!duff-update') {
-        const now = Date.now();
-        if (now - lastUsed.duffUpdate < cooldowns.duffUpdate) {
-            const wait = Math.ceil((cooldowns.duffUpdate - (now - lastUsed.duffUpdate)) / 1000);
-            return message.reply(`⏳ Aguarde ${wait}s para fazer outra atualização.`);
+
+        if (duffBusy){
+            return message.reply('⏳ Aguarde a requisição anterior terminar.');
         }
-        lastUsed.duffUpdate = now;
+
+        duffBusy = true;
 
         await message.reply('Aguarde, tentando atualizar os status do op.gg...');
-        try {
-            const browser = await launchBrowser();
-            const page = await browser.newPage();
 
+        let page;
+        try {
+            page = await sharedBrowser.newPage();
             await page.setUserAgent(
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
             );
             await page.setViewport({ width: 1280, height: 800 });
-            await page.goto(URL_TO_SCREENSHOT, { waitUntil: 'networkidle2' });
+            await page.goto(URL_TO_SCREENSHOT, { waitUntil: 'networkidle2', timeout: 90000 });
 
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            await new Promise(resolve => setTimeout(resolve, 300));
+
 
             // Seleciona o botão "Completo"
             const button = await page.$('button.bg-yellow-500');
@@ -141,10 +148,12 @@ client.on('messageCreate', async (message) => {
                 await message.reply('✅ Atualizado com sucesso!');
             }
 
-            await browser.close();
         } catch (error) {
             console.error(error);
             message.reply('❌ Erro ao tentar atualizar.');
+        } finally {
+            duffBusy = false;
+            if (page) await page.close();
         }
     }
 });
