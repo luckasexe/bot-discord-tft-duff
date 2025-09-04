@@ -25,26 +25,13 @@ const isLinux = process.platform === 'linux';
 
 // Função para abrir o Puppeteer de forma cross-platform
 async function launchBrowser() {
-    let executablePath;
-
-    if (isLinux) {
-        const { execSync } = require('child_process');
-        try {
-            // tenta achar chromium ou chromium-browser no sistema
-            executablePath = execSync('which chromium-browser || which chromium', { encoding: 'utf-8' }).trim();
-            console.log(`✅ Chromium encontrado: ${executablePath}`);
-        } catch (e) {
-            console.warn('⚠️ Nenhum Chromium do sistema encontrado. Usando binário do Puppeteer.');
-            executablePath = undefined; // deixa o Puppeteer usar o próprio
-        }
-    }
-
     return await puppeteer.launch({
         headless: true,
-        executablePath, // se for undefined, Puppeteer usa o binário interno
+        executablePath: isLinux ? '/usr/bin/chromium-browser' : undefined,
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 }
+
 
 client.once('ready', () => {
     console.log(`✅ Bot ${client.user.tag} online!`);
