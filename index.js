@@ -52,7 +52,7 @@ const lastUsed = {
 let sharedBrowser;
 let duffBusy = false;
 
-client.once('ready', async() => {
+client.once('clientReady', async() => {
     console.log(`✅ Bot ${client.user.tag} online!`);
     sharedBrowser = await launchBrowser();
 });
