@@ -74,36 +74,56 @@ client.on('messageCreate', async (message) => {
         if (duffBusy){
             return message.reply('⏳ Aguarde a requisição anterior terminar.');
         }
-
         duffBusy = true;
+
+        log("Comando !duff chamado.");
 
         await message.reply('Aguarde, o print da página pode demorar alguns segundos...');
 
         let page;
         try {
             page = await sharedBrowser.newPage();
+
+            log("Nova página aberta.");
+
             await page.setUserAgent(
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
             );
+            log("User-Agent definido.");
+
             await page.setViewport({ width: 1280, height: 800 });
-            await page.goto(URL_TO_SCREENSHOT, { waitUntil: 'networkidle2', timeout: 90000 });
+            log("Viewport definido.");
+
+            log("Navegando até " + URL_TO_SCREENSHOT);
+            await page.goto(URL_TO_SCREENSHOT, { waitUntil: 'domcontentloaded', timeout: 30000 });
+            log("Página carregada com sucesso.");
 
             // espera a página carregar
             await new Promise(resolve => setTimeout(resolve, 300));
-
+            log("Delay de 300ms concluído.");
 
             // captura apenas o painel do summoner
             const element = await page.$('div.flex.flex-col.p-3');
             if (!element) throw new Error('Não encontrou o painel do summoner');
+            log("Elemento encontrado.");
+
             const screenshotBuffer = await element.screenshot();
+            log("Screenshot capturado.");
+
             const attachment = new AttachmentBuilder(screenshotBuffer, { name: 'screenshot.png' });
             await message.reply({ files: [attachment] });
+            log("Screenshot enviado para o Discord.");
         } catch (error) {
+            log("Erro no comando !duff", error);
             console.error(error);
             message.reply('❌ Erro ao tentar tirar o print da página.');
         } finally {
             duffBusy = false;
-            if (page) await page.close();
+            if (page) {
+                await page.close();
+                log("Página fechada.");
+            };
+            log("Execução do comando !duff finalizada.");
         }
     }
 
@@ -115,6 +135,8 @@ client.on('messageCreate', async (message) => {
         }
 
         duffBusy = true;
+
+        log("Comando !duff-update chamado.");
 
         await message.reply('Aguarde, tentando atualizar os status do op.gg...');
 
@@ -157,5 +179,14 @@ client.on('messageCreate', async (message) => {
         }
     }
 });
+
+function log(msg, error = null) {
+    const now = new Date().toISOString(); // formato 2025-09-15T21:30:00.000Z
+    if (error) {
+        console.error(`[${now}] ${msg}`, error);
+    } else {
+        console.log(`[${now}] ${msg}`);
+    }
+}
 
 client.login(TOKEN);
